@@ -1,0 +1,26 @@
+<script type="text/javascript">
+    RED.nodes.registerType('rainbird-stopZone',{
+        category: 'rainbird',
+        color: '#d97848',
+        defaults: {
+            server: {value:"", type:"rainbird-server"}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "font-awesome/fa-stop",
+        label: function() {
+            return this.name||"rainbird-stopZone";
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="rainbird-stopZone">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-tag"></i> Server</label>
+        <input type="text" id="node-input-server" placeholder="Server">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="rainbird-stopZone">
+    <p>Stops all sprinkler zones.</p>
+</script>

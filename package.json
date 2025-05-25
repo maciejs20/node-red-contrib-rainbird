@@ -1,0 +1,32 @@
+{
+  "name": "node-red-contrib-rainbird",
+  "version": "0.1.1",
+  "description": "This is an wrapper arround https://github.com/bbreukelen/node-rainbird that exposes Rainbird LNK2 functions to node-red.\n It allows to communicate with Rainbird sprinkler controllers.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Maciej Szulc",
+  "license": "ISC",
+  "node-red": {
+    "nodes": {
+      "rainbird-info": "rainbird-info.js",
+      "rainbird-state": "rainbird-state.js",
+      "rainbird-active": "rainbird-active.js",
+      "rainbird-config": "config.js",
+      "rainbird-startZone": "rainbird-startZone.js",
+      "rainbird-stopZone": "rainbird-stopZone.js",
+      "rainbird-delayStart": "rainbird-delayStart.js",
+      "rainbird-startProgram": "rainbird-startProgram.js",
+      "rainbird-getDelay": "rainbird-getDelay.js"
+    }
+  },
+  "devDependencies": {
+    "jest": "^27.3.1"
+  },
+  "dependencies": {
+    "aes-js": "^3.1.2",
+    "base64-arraybuffer": "^1.0.1",
+    "node-rainbird": "^2.0.1"
+  }
+}

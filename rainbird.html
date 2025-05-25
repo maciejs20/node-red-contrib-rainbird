@@ -1,0 +1,28 @@
+<script type="text/javascript">
+    RED.nodes.registerType('rainbird',{
+        category: 'rainbird',
+        color: '#a6bbcf',
+        defaults: {
+            server: {value:"", type:"rainbird-server"}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "file.png",
+        label: function() {
+            return this.name||"rainbird";
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="rainbird">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-tag"></i> Server</label>
+        <input type="text" id="node-input-server" placeholder="Server">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="rainbird">
+    <p>A simple node that talks to rainbird LNK2</p>
+    This is an wrapper arround https://github.com/bbreukelen/node-rainbird that exposes Rainbird LNK2 functions to node-red. 
+    It allows to communicate with Rainbird sprinkler controllers.
+</script>

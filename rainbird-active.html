@@ -1,0 +1,28 @@
+<script type="text/javascript">
+    RED.nodes.registerType('rainbird-active',{
+        category: 'rainbird',
+        color: '#E6E0F8',
+        defaults: {
+            server: {value:"", type:"rainbird-server"}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "font-awesome/fa-tint",
+        label: function() {
+            return this.name||"rainbird-active";
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="rainbird-active">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-tag"></i> Server</label>
+        <input type="text" id="node-input-server" placeholder="Server">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="rainbird-active">
+    <p>Note to get active zone (sprinkler) information from Rainbird sprinkler controller via local LNK2 connection.</p>
+    This module requires no parameters (except for LNK2 server instance data).
+    It returns payload with information acquired from Rainbird instance.
+</script>
