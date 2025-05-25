@@ -17,7 +17,7 @@ module.exports = function (RED) {
 		node.on("input", function (msg) {
 			//check msg.payload to be a number between 1 and 14
 			if (typeof msg.payload === "number") {
-				if (msg.payload >= 1 && msg.payload <= 14) {
+				if (msg.payload >= 0 && msg.payload <= 14) {
 					node.status({ fill: "yellow", shape: "dot", text: "Query..." });
 
 					rainbird

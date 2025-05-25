@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-rainbird",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "This is a wrapper around https://github.com/bbreukelen/node-rainbird that exposes Rainbird LNK2 functions to Node-RED. It allows communication with Rainbird sprinkler controllers.",
   "main": "index.js",
   "scripts": {
