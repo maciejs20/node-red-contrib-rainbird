@@ -1,4 +1,4 @@
-const RainBirdClass = require("node-rainbird");
+const RainBirdClass = require('./node-rainbird.js');
 
 module.exports = function (RED) {
 	function bitCount(n) {
@@ -19,7 +19,8 @@ module.exports = function (RED) {
 		}
 
 		var node = this;
-		var rainbird = new RainBirdClass(this.server.rainIp, this.server.rainKey);
+		var rainbird = new RainBirdClass();
+		this.server.configInstance(rainbird);
 
 		node.on("input", function (msg) {
 			node.status({ fill: "yellow", shape: "dot", text: "Querying..." });

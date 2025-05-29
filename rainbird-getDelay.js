@@ -1,4 +1,4 @@
-const RainBirdClass = require("node-rainbird");
+const RainBirdClass = require("./node-rainbird.js");
 
 module.exports = function (RED) {
 	function RainbirdNode(config) {
@@ -12,7 +12,7 @@ module.exports = function (RED) {
 		}
 
 		var node = this;
-		var rainbird = new RainBirdClass(this.server.rainIp, this.server.rainKey);
+		const rainbird = this.server.getInstance();
 
 		node.on("input", function (msg) {
 			rainbird

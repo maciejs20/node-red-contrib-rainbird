@@ -1,34 +1,63 @@
 <script type="text/javascript">
-    RED.nodes.registerType('rainbird-server',{
-        category: 'config',
-        color: '#a6bbcf',
-        defaults: {
-            rainIp: {value:"10.10.12.59"},
-            rainKey: {value:""},
-            sname: {value:"lnk2"}
-        },
-        inputs:1,
-        outputs:1,
-        icon: "file.png",
-        label: function() {
-            return this.name||"rainbird-server";
-        }
-    });
+	RED.nodes.registerType("rainbird-server", {
+		category: "config",
+		color: "#a6bbcf",
+		defaults: {
+			rainIp: { value: "10.10.12.59" },
+			rainKey: { value: "" },
+			sname: { value: "lnk2" },
+			timeout: { value: 3000, validate: RED.validators.number() },
+			retryCount: { value: 2, validate: RED.validators.number() },
+			retryDelay: { value: 1000, validate: RED.validators.number() },
+			debug: { value: false },
+		},
+		inputs: 1,
+		outputs: 1,
+		icon: "file.png",
+		label: function () {
+			return this.sname || "rainbird-server";
+		},
+	});
 </script>
 
 <script type="text/html" data-template-name="rainbird-server">
-    <div class="form-row">
-        <label for="node-input-sname"><i class="fa fa-tag"></i>LNK2 name</label>
-        <input type="text" id="node-config-input-sname" placeholder="LNK2 name">
-        <br>
-        <label for="node-input-rainIp"><i class="fa fa-tag"></i>LNK2 IP</label>
-        <input type="text" id="node-config-input-rainIp" placeholder="Rainbird IP">
-        <br>
-        <label for="node-input-rainKey"><i class="fa fa-tag"></i>LNK2 pass</label>
-        <input type="text" id="node-config-input-rainKey" placeholder="Rainbird pass">
-    </div>
+	<div class="form-row">
+		<label for="node-config-input-sname"><i class="fa fa-tag"></i> LNK2 name</label>
+		<input type="text" id="node-config-input-sname" placeholder="LNK2 name" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-rainIp"><i class="fa fa-tag"></i> LNK2 IP</label>
+		<input type="text" id="node-config-input-rainIp" placeholder="Rainbird IP" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-rainKey"><i class="fa fa-key"></i> LNK2 pass</label>
+		<input type="password" id="node-config-input-rainKey" placeholder="Rainbird pass" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+		<input type="number" id="node-config-input-timeout" min="100" step="100" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-retryCount"><i class="fa fa-repeat"></i> Retry Count</label>
+		<input type="number" id="node-config-input-retryCount" min="0" step="1" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-retryDelay"><i class="fa fa-hourglass-half"></i> Retry Delay (ms)</label>
+		<input type="number" id="node-config-input-retryDelay" min="0" step="100" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-debug"><i class="fa fa-bug"></i> Debug</label>
+		<input type="checkbox" id="node-config-input-debug" />
+	</div>
 </script>
 
 <script type="text/html" data-help-name="rainbird-server">
-    <p>A simple node that talks to Rainbird LNK2</p>
+	<p>This node stores configuration for your Rainbird LNK2 controller, including:</p>
+	<ul>
+		<li><b>IP</b> – the IP address of the controller on your LAN</li>
+		<li><b>Pass</b> – encryption key/password for communication</li>
+		<li><b>Timeout</b> – maximum time to wait for a response</li>
+		<li><b>Retry Count / Delay</b> – control retry behavior</li>
+		<li><b>Debug</b> – enable detailed logs</li>
+	</ul>
 </script>

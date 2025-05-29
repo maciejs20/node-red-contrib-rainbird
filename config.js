@@ -1,3 +1,5 @@
+const RainBirdClass = require("./node-rainbird.js");
+
 module.exports = function (RED) {
 	/**
 	 * Save connection data
@@ -5,12 +7,50 @@ module.exports = function (RED) {
 
 	function RemoteServerNode(n) {
 		RED.nodes.createNode(this, n);
+
 		this.rainIp = n.rainIp;
 		this.rainKey = n.rainKey;
 		this.rainDuration = 5; // default manual irrigation time
+		this.retryCount = parseInt(n.retryCount, 10) || 2;
+		this.timeout = parseInt(n.timeout, 10) || 3000;
+		this.retryDelay = parseInt(n.retryDelay, 10) || 1000;
+		this.debug = n.debug;
+
+		this.rainbirdInstance = new RainBirdClass();
+
 		var node = this;
 
-		node.log("[config.js:RemoteServerNode] Rainbird config: Init lnk2 ip=" + this.rainIp);
+		this.configInstance = function (rbInstance) {
+			if (!rbInstance || typeof rbInstance.setIp !== "function") {
+				node.error("Invalid RainBird instance provided.");
+				return;
+			}
+
+			rbInstance.setIp(this.rainIp);
+			rbInstance.setPassword(this.rainKey);
+			rbInstance.setRetryCount(this.retryCount);
+			rbInstance.setRetryDelay(this.retryDelay);
+			rbInstance.setTimeout(this.timeout);
+			if (this.debug) {
+				node.log("RainBird debug is on");
+				rbInstance.setDebug(true);
+			}
+
+			rbInstance.setLogger({
+				log: node.log.bind(node),
+				warn: node.warn.bind(node),
+				error: node.error.bind(node)
+			});
+		};
+
+		this.configInstance(this.rainbirdInstance); // Skonfiguruj od razu
+
+		this.getInstance = function () {
+			// return RainBirdClass instance
+			return this.rainbirdInstance;
+		};
+
+		node.log("Rainbird config: Init LNK2 ip=" + this.rainIp);
 	}
 
 	RED.nodes.registerType("rainbird-server", RemoteServerNode);

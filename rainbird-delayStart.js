@@ -1,5 +1,3 @@
-const RainBirdClass = require("node-rainbird");
-
 module.exports = function (RED) {
 	function RainbirdNode(config) {
 		RED.nodes.createNode(this, config);
@@ -12,7 +10,8 @@ module.exports = function (RED) {
 		}
 
 		var node = this;
-		var rainbird = new RainBirdClass(this.server.rainIp, this.server.rainKey);
+
+		const rainbird = this.server.getInstance();
 
 		node.on("input", function (msg) {
 			//check msg.payload to be a number between 1 and 14

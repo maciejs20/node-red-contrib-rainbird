@@ -93,6 +93,10 @@ Retrieves information on whether a program's start has been delayed. The payload
 
 An example flow is provided in the **examples** folder of the repository. This flow demonstrates how to integrate and use the available Rainbird nodes within a Node-RED environment.
 
+## Credits
+
+This package uses a modified version of [node-rainbird](https://github.com/bbreukelen/node-rainbird) originally developed by @bbreukelen. All protocol decoding and encryption logic is based on that excellent work.
+
 
 ---
 
