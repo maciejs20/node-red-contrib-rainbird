@@ -1,15 +1,17 @@
 <script type="text/javascript">
-    RED.nodes.registerType('rainbird-startZone',{
+    RED.nodes.registerType('rainbird-startZone', {
         category: 'rainbird',
         color: '#64d10a',
         defaults: {
-            server: {value:"", type:"rainbird-server"}
+            server: { value: "", type: "rainbird-server" },
+            duration: { value: 10 },
+            name: { value: "" }
         },
-        inputs:1,
-        outputs:1,
+        inputs: 1,
+        outputs: 1,
         icon: "font-awesome/fa-play",
-        label: function() {
-            return this.name||"rainbird-startZone";
+        label: function () {
+            return this.name || "rainbird-startZone";
         }
     });
 </script>
@@ -19,11 +21,32 @@
         <label for="node-input-server"><i class="fa fa-tag"></i> Server</label>
         <input type="text" id="node-input-server" placeholder="Server">
     </div>
+    <div class="form-row">
+        <label for="node-input-duration"><i class="fa fa-clock-o"></i> Default Duration (minutes)</label>
+        <input type="number" id="node-input-duration" min="1" max="60" placeholder="10">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Optional name">
+    </div>
 </script>
 
 <script type="text/html" data-help-name="rainbird-startZone">
-    <p>Manually activates a zone for x minutes.</p>
-    When another zone is active, it will be de-activated.
-    This module requires msg.zone to set which zone will be started. Do not exceed number of zones that You have.
-    This module requires msg.time to set how long it should run (in minutes). 
+    <p>This node activates a RainBird irrigation zone via the LNK2 local controller.</p>
+
+    <h3>Input</h3>
+    <ul>
+        <li><code>payload.Active</code>: <code>1</code> triggers watering. <code>0</code> is ignored.</li>
+        <li><code>payload.SetDuration</code>: optional, sets default duration for a zone (in seconds).</li>
+        <li><code>msg.topic</code>: required, contains zone number as string or integer.</li>
+        <li><code>msg.time</code>: optional, overrides all durations (in minutes).</li>
+    </ul>
+
+    <h3>Behavior</h3>
+    <ul>
+        <li>Duration is resolved in order: <code>msg.time</code> → zone default → configured default.</li>
+        <li>Zone number must be between 1 and 22.</li>
+        <li>Duration must be between 1 and 60 minutes.</li>
+        <li>No action is taken for <code>Active = 0</code> or missing <code>Active</code>.</li>
+    </ul>
 </script>

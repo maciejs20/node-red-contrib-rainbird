@@ -1,61 +1,93 @@
-const RainBirdClass = require("./node-rainbird.js");
+const zoneDurations = {}; // Stores per-zone default durations (zoneId => minutes)
+const MAX_ZONES = 22;
+const MAX_TIME = 60;
 
 module.exports = function (RED) {
 	function RainbirdNode(config) {
 		RED.nodes.createNode(this, config);
-		this.log("Starting rainbird LNK2 rainbird-startZone node.");
-		this.server = RED.nodes.getNode(config.server);
+		const node = this;
 
-		if (!this.server || !this.server.rainIp || !this.server.rainKey) {
-			this.error("Server configuration is missing or invalid.");
+		node.name = config.name;
+		node.defaultDuration = parseInt(config.duration) || 10;
+		node.server = RED.nodes.getNode(config.server);
+
+		if (!node.server || !node.server.rainIp || !node.server.rainKey) {
+			node.error("Server configuration is missing or invalid.");
 			return;
 		}
 
-		var node = this;
-		const rainbird = this.server.getInstance();
+		const rainbird = node.server.getInstance();
 
 		node.on("input", function (msg) {
-			if (msg.zone === "" || msg.zone === undefined) {
-				node.error("No msg.zone provided");
-				return;
+			if (msg.hasOwnProperty("hap")) {
+				delete msg.hap;
 			}
-			if (msg.time === "" || msg.time === undefined) {
-				node.error("No msg.time provided");
-				return;
-			}
+			// node.debug("Incoming message: " + JSON.stringify(msg));
 
-			var zone = parseInt(msg.zone);
-			var minutes = parseInt(msg.time);
+			const topic = String(msg.topic ?? "");
 
-			if (zone < 1 || zone > 22) {
-				node.error("Wrong zone number in msg.zone.");
-				return;
-			}
-
-			if (minutes < 1 || minutes > 60) {
-				node.error("Wrong time in msg.time.");
+			// --- Handle SetDuration messages (from HomeKit etc.) ---
+			if (msg.payload?.SetDuration && topic) {
+				const durationMin = Math.floor(msg.payload.SetDuration / 60);
+				if (durationMin >= 1 && durationMin <= MAX_TIME) {
+					zoneDurations[topic] = durationMin;
+					node.log(`SetDuration received for zone ${topic}: ${durationMin} minutes`);
+				} else {
+					node.warn(`Invalid SetDuration for zone ${topic}: ${durationMin} minutes`);
+				}
 				return;
 			}
 
-			// Assuming node.status() is valid; replace with appropriate status handling logic if necessary
-			node.status({ fill: "yellow", shape: "dot", text: "Query..." });
+			// --- Ignore if payload.Active is missing ---
+			if (!msg.payload || typeof msg.payload.Active === "undefined") {
+				node.debug("Ignored message without payload.Active.");
+				return;
+			}
+
+			// --- Ignore Active = 0 ---
+			if (msg.payload.Active === 0) {
+				node.debug("Active = 0 received – doing nothing (ignored).");
+				return;
+			}
+
+			// --- Determine zone and duration ---
+			const zone = parseInt(topic);
+			let duration = parseInt(msg.time);
+			if (isNaN(duration)) {
+				duration = zoneDurations[topic] ?? node.defaultDuration;
+			}
+
+			if (isNaN(zone) || zone < 1 || zone > MAX_ZONES) {
+				node.error(`Invalid or missing zone number. Must be between 1 and ${MAX_ZONES}.`);
+				return;
+			}
+
+			if (isNaN(duration) || duration < 1 || duration > MAX_TIME) {
+				node.error(`Invalid watering time: ${duration}. Must be between 1 and ${MAX_TIME} minutes.`);
+				return;
+			}
+
+			// --- Log action with timestamp ---
+			const now = new Date().toISOString();
+			node.log(`Triggering watering: node "${node.name || "(unnamed)"}", zone ${zone}, duration ${duration}min`);
+
+			// --- Execute watering ---
+			node.status({ fill: "yellow", shape: "dot", text: `Activating zone ${zone}...` });
 
 			rainbird
-				.startZone(zone, minutes)
-				.then(function (result) {
-					node.status({ fill: "green", shape: "dot", text: "OK" });
+				.startZone(zone, duration)
+				.then((result) => {
+					node.status({ fill: "green", shape: "dot", text: `Zone ${zone} started` });
 					msg.payload = result;
 					node.send(msg);
-					// Clear status after 5 seconds
-					setTimeout(() => {
-						node.status({});
-					}, 5000);
+					setTimeout(() => node.status({}), 5000);
 				})
-				.catch(function (error) {
+				.catch((error) => {
 					node.error("Error starting zone: " + error.message);
 					node.status({ fill: "red", shape: "ring", text: "Failed" });
 				});
 		});
 	}
+
 	RED.nodes.registerType("rainbird-startZone", RainbirdNode);
 };
