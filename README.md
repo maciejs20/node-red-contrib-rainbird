@@ -55,6 +55,17 @@ Fetches information on active zones (sprinklers) from the Rainbird sprinkler con
   "activeZones": [0, 0, 0, 0]
 }
 ```
+New Feature – HomeKit Mode:
+In "homekit" mode, this node detects changes in zone state and outputs only those zones that have changed. The output is formatted in a way compatible with HomeKit NRCHKB "Valve" node:
+```json
+{
+  "payload": {
+    "Active": 1,
+    "InUse": 1
+  },
+  "topic": "2"
+}
+```
 
 #### **rainbird-config**
 
@@ -62,10 +73,28 @@ Configuration node for managing the controller's setup.
 
 #### **rainbird-startZone**
 
-Manually activates a specific zone for a set duration (in minutes). If another zone is already active, it will be deactivated.
+Manually activates a specific zone for a set duration (in minutes). If another zone is already active, it will be deactivated. It accepts message:
+```json
+{
+  "payload": { "Active": 1 },
+  "topic": "zone_nr",
+  "time": "time_in_minutes"
+}
+```
+where
 
-* **msg.zone**: Specifies which zone to activate.
+* **msg.topic**: Specifies which zone to activate.
 * **msg.time**: Defines how long the zone should run (in minutes).
+* **msg.payload.Active**: Is a key that confirms that we want to start this zone.
+Additionally, if a message contains:
+
+```json
+{ 
+  "payload": 
+    { "SetDuration": <time_in_seconds> }, 
+  "topic": "zone_nr" }
+```
+The duration is stored for that zone and will be used for future activations. This enables direct integration with HomeKit valve controls.
 
 #### **rainbird-stopZone**
 
