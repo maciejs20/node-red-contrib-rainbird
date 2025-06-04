@@ -13,7 +13,9 @@ module.exports = function (RED) {
 		this.name = config.name;
 
 		const MAX_INACTIVITY_SECONDS = 1800; // 30 minut
+		const FULL_UPDATE_EVERY_N_MESSAGES = 10; // co 10 komunikatów pełna informacja
 		let lastFullUpdateTime = 0;
+		let messageCounter = 0;
 
 		if (!this.server || !this.server.rainIp || !this.server.rainKey) {
 			this.error("Server configuration is missing or invalid.");
@@ -32,14 +34,20 @@ module.exports = function (RED) {
 
 					if (node.mode === "homekit") {
 						const now = Date.now();
-						const forceFullUpdate = (now - lastFullUpdateTime) > MAX_INACTIVITY_SECONDS * 1000;
+						messageCounter++;
+						const timeExceeded = now - lastFullUpdateTime > MAX_INACTIVITY_SECONDS * 1000;
+						const counterExceeded = messageCounter % FULL_UPDATE_EVERY_N_MESSAGES === 0;
+						const forceFullUpdate = timeExceeded || counterExceeded;
 
 						const { changed, fullState, newState } = processHomekitMode(result, node.prevState, forceFullUpdate);
 						node.prevState = newState;
 
 						if (forceFullUpdate || changed.length > 0) {
 							if (forceFullUpdate) {
-								node.log(`Sending full update (no change for ${MAX_INACTIVITY_SECONDS} seconds).`);
+								const reason = timeExceeded
+									? `no change for ${MAX_INACTIVITY_SECONDS} seconds`
+									: `${FULL_UPDATE_EVERY_N_MESSAGES} messages`;
+								node.log(`Sending full update (${reason}).`);
 								lastFullUpdateTime = now;
 							}
 							const toSend = forceFullUpdate ? fullState : changed;

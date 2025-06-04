@@ -1,4 +1,4 @@
-This set of nodes enables communication with the Rainbird LNK2 sprinkler controller via a local LNK2 connection. To use these nodes, you need both the Rainbird controller and the LNK2 add-on properly plugged in and configured.
+This set of nodes enables communication with the Rainbird irrigation controller via a local LNK2 connection. To use these nodes, you need both the Rainbird controller and the LNK2 add-on properly plugged in and configured. It should work with most Rainbird devices using LNK2 wifi module but currently it is tested with ESP-me3. Original protocol implementation was also tested with ESP-RZXe. This module is exposing nodes that allows both to query state and start/stop irrigation proces. It is intended to be used with node-red NRCHKB homekit integration which allows to expose irrigation system in Apple Home app.
 
 ### Prerequisites
 
@@ -7,13 +7,14 @@ To connect, you need the **LNK2 IP address** and **PIN**:
 * **LNK2 PIN**: This is the code you set up in the Rainbird mobile app when configuring the LNK2.
 * **LNK2 IP**: This is the local IP address assigned by your router.
 
-This package wraps the functionality of [node-rainbird](https://github.com/bbreukelen/node-rainbird) and exposes Rainbird LNK2 functions to Node-RED.
+This package uses modified protocol code of [node-rainbird](https://github.com/bbreukelen/node-rainbird) to communicate with Rainbird controllers.
 
 ### Available Nodes:
 
 #### **rainbird-info**
 
-Fetches basic information about the Rainbird sprinkler controller via the local LNK2 connection. The payload returned contains the following:
+Fetches basic information about the Rainbird sprinkler controller via the local LNK2 connection - serial number, model, date and other usefull informations.
+The payload contains following:
 
 ```json
 {
@@ -42,11 +43,12 @@ Retrieves the current **IrrigationState** from the Rainbird sprinkler controller
 }
 ```
 
-The **irrigationState** indicates whether the Rainbird controller is running a program. This does not provide information on active zones.
+The **irrigationState** indicates whether the Rainbird controller is running a program. This does not provide information on active zones, but acts as a flag that controller is set to start irrigation automatically.
 
 #### **rainbird-active**
 
-Fetches information on active zones (sprinklers) from the Rainbird sprinkler controller. The returned payload will include:
+Fetches information on currently active zones (sprinklers) from the Rainbird sprinkler controller. Rainbird allows to have only single node running at a time.
+The returned payload will include:
 
 ```json
 {
