@@ -1,22 +1,24 @@
-const RainBirdClass = require("./node-rainbird.js");
-
 module.exports = function (RED) {
 	function RainbirdNode(config) {
 		RED.nodes.createNode(this, config);
-		this.log("Starting rainbird LNK2 rainbird-state node.");
+		const node = this;
+
+		node.log("Starting rainbird LNK2 rainbird-state node.");
 
 		this.server = RED.nodes.getNode(config.server);
 		// Ensure server exists and has necessary properties
 		if (!this.server || !this.server.rainIp || !this.server.rainKey) {
-			this.error("Missing or invalid server configuration.");
+			node.error("Missing or invalid server configuration.");
 			return;
 		}
 
-		var node = this;
 		const rainbird = this.server.getInstance();
 
+
+		// === Main Logic ===
 		node.on("input", function (msg) {
 			node.status({ fill: "yellow", shape: "dot", text: "Querying..." });
+
 			rainbird
 				.getIrrigationState()
 				.then(function (result) {

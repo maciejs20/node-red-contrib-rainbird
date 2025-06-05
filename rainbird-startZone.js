@@ -1,6 +1,6 @@
 const zoneDurations = {};
-const MAX_ZONES = 22;  //maximum number of zones this supports
-const MAX_TIME = 60;  //max irrigation time allowed
+const MAX_ZONES = 22; //maximum number of zones this supports
+const MAX_TIME = 60; //max irrigation time allowed
 const GLOBAL_COMMAND_DELAY_MS = 300; //delay between consecutive start commands, may be required if You have main valve or pump
 const MAX_GLOBAL_QUEUE_LENGTH = 3; //max queue length for consecutive start commands
 
@@ -106,6 +106,8 @@ module.exports = function (RED) {
 				node.status({ fill: "yellow", shape: "dot", text: `Zone ${zone} starting...` });
 
 				const result = await rainbird.startZone(zone, duration);
+
+				node.server.triggerZoneStart(zone, duration);
 
 				node.status({ fill: "green", shape: "dot", text: `Zone ${zone} started` });
 				msg.payload = result;

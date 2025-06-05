@@ -1,0 +1,4 @@
+1.0.24: Auto-update mechanism which triggers zone status send when zone is started/closed.
+        Remove incremental updates when using homekit mode. Now each update gives full status of sprinklers.
+        Added initial support for larger amount of sprinklers. Currently works for up to 8 but I plan to extend that when I'll have more zones configured on my Rainbird
+        

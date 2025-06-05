@@ -16,6 +16,15 @@ module.exports = function (RED) {
 		this.retryDelay = parseInt(n.retryDelay, 10) || 1000;
 		this.debug = n.debug;
 
+		//calbacks to update current status
+		this.onZoneStartCallbacks = [];
+		this.registerOnZoneStart = function (fn) {
+			this.onZoneStartCallbacks.push(fn);
+		};
+		this.triggerZoneStart = function (zoneId, duration) {
+			this.onZoneStartCallbacks.forEach((fn) => fn(zoneId, duration));
+		};
+
 		this.rainbirdInstance = new RainBirdClass();
 
 		var node = this;
@@ -39,7 +48,7 @@ module.exports = function (RED) {
 			rbInstance.setLogger({
 				log: node.log.bind(node),
 				warn: node.warn.bind(node),
-				error: node.error.bind(node)
+				error: node.error.bind(node),
 			});
 		};
 

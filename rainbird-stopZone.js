@@ -24,6 +24,7 @@ module.exports = function (RED) {
 					node.status({ fill: "green", shape: "dot", text: "OK" });
 					msg.payload = result;
 					node.send(msg);
+					node.server.triggerZoneStart("all", 0);
 
 					// Clear status after 5 seconds
 					setTimeout(() => {
