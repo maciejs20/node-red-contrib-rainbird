@@ -1,4 +1,12 @@
 1.0.24: Auto-update mechanism which triggers zone status send when zone is started/closed.
         Remove incremental updates when using homekit mode. Now each update gives full status of sprinklers.
         Added initial support for larger amount of sprinklers. Currently works for up to 8 but I plan to extend that when I'll have more zones configured on my Rainbird
-        
+1.0.30: Fix for long-term connection stability (AbortError after prolonged use of connection). Not verified yet as it requires significant amount of time...       
+1.0.32: Additional data in info reply
+1.0.36: Modify info output to distinguish between different data types. 
+        Add rain sensor reporting to info node
+1.0.40: Fixed rainbird class structure. 
+        Fixed rainbird class logging, debug now works properly.
+        Fixed inconsistent class init for different functions.
+        Add seasonal program adjust info for all programs (info node).
+        Add device type decoding.

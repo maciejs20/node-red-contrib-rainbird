@@ -18,18 +18,59 @@ The payload contains following:
 
 ```json
 {
-  "serialNumber": "xxxxxxxxxx",
-  "modelID": "xxxxx",
-  "protocolRevisionMajor": "xx",
-  "protocolRevisionMinor": "xx",
-  "hour": 13,
-  "minute": 21,
-  "second": 19,
-  "day": 25,
-  "month": 5,
-  "year": 2025,
-  "pageNumber": "00",
-  "stationsAvail": 10
+    "serialNumber": {
+        "serialNumber": "XXXXXXXXXXXXX"
+    },
+    "modelAndVersion": {
+        "modelID": "0009",
+        "protocolRevisionMajor": "02",
+        "protocolRevisionMinor": "0C",
+        "modelCode": "ESP_ME3",
+        "modelName": "ESP-ME3",
+        "supportsWaterBudget": true,
+        "maxPrograms": 4,
+        "maxRunTimes": 6,
+        "retries": true
+    },
+    "time": {
+        "hour": 11,
+        "minute": 16,
+        "second": 9
+    },
+    "date": {
+        "day": 28,
+        "month": 7,
+        "year": 2025
+    },
+    "availableZones": {
+        "pageNumber": "00",
+        "stationsAvail": 10
+    },
+    "rainSensorState": {
+        "sensorState": false
+    },
+    "programsWaterBudget": [
+        {
+            "programCode": "00",
+            "seasonalAdjust": "006D",
+            "waterBudgetPercent": 109
+        },
+        {
+            "programCode": "01",
+            "seasonalAdjust": "004C",
+            "waterBudgetPercent": 76
+        },
+        {
+            "programCode": "02",
+            "seasonalAdjust": "0064",
+            "waterBudgetPercent": 100
+        },
+        {
+            "programCode": "03",
+            "seasonalAdjust": "004C",
+            "waterBudgetPercent": 76
+        }
+    ]
 }
 ```
 

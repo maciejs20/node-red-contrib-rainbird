@@ -48,7 +48,7 @@ module.exports = function (RED) {
 			rbInstance.setLogger({
 				log: node.log.bind(node),
 				warn: node.warn.bind(node),
-				error: node.error.bind(node),
+				error: node.error.bind(node)
 			});
 		};
 

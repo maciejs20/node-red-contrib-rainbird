@@ -4,4 +4,10 @@ This project includes code originally from:
 - URL: https://github.com/bbreukelen/node-rainbird
 - License: GNU General Public License v3.0
 
+This project includes data from:
+- Project: pyrainbird
+- Author: allenporter
+- URL: https://github.com/allenporter/pyrainbird/blob/main/pyrainbird
+- License: MIT
+
 Modifications made by Maciej Szulc, 2025.

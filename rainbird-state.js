@@ -33,7 +33,7 @@ module.exports = function (RED) {
 					}, 5000);
 				})
 				.catch(function (err) {
-					node.error("LNK2 Rainbird call error: " + err.message);
+					node.warn("LNK2 Rainbird call error: " + err.message);
 					node.status({ fill: "red", shape: "ring", text: err.message });
 				});
 		});

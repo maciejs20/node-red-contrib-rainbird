@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-rainbird",
-  "version": "1.0.24",
+  "version": "1.0.40",
   "description": "Node-RED nodes for controlling RainBird sprinkler controller (like: ESP-ME3) via local LNK2 wifi module connection. This wraps the RainBird SIP protocol using AES encryption. It uses a slightly modified version of node-rainbird originally developed by @bbreukelen.",
   "main": "index.js",
   "author": {
