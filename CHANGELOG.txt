@@ -10,3 +10,8 @@
         Fixed inconsistent class init for different functions.
         Add seasonal program adjust info for all programs (info node).
         Add device type decoding.
+1.0.40: Added initial support of program schedule retrieval but my ESP-ME3 does not support this command so it is not fully implemented...
+        Added ability to check if device supports selected command (node-rainbird module).
+        Modified rainbird-state to show additional info about controller state and running program - not tested as my ESP-ME3 does not support that command
+1.0.42: Added node to check which command is supported by controller.
+1.0.43: Decoding time and date in info response.

@@ -12,6 +12,8 @@ const { TextEncoder, TextDecoder } = require("util");
 const { AbortController } = require("abort-controller");
 const aesjs = require("aes-js");
 
+const sipCommands = require("./rainbird-sip-commands");
+
 class RainBirdClass {
 	constructor(ipAddress, password) {
 		this.ip = ipAddress;
@@ -44,17 +46,11 @@ class RainBirdClass {
 		this.retryDelay = ms;
 	}
 	setLogger(node) {
-		//console.log("--- node-rainbird setLogger call");
-
 		if (!node || typeof node !== "object") return;
 		const requiredMethods = ["log", "warn", "error"];
 		const missing = requiredMethods.filter((m) => typeof node[m] !== "function");
 		if (missing.length > 0) console.warn("Logger missing methods: " + missing.join(", "));
-		else {
-			//console.log("node-rainbird logger is set!");
-			this.logger = node;
-			// this.logger.log("Logging test for .log: confirmed.");
-		}
+		else this.logger = node;
 	}
 
 	// --- public API commands ---
@@ -106,6 +102,17 @@ class RainBirdClass {
 	async startProgram(programNr) {
 		return this._queue("ManuallyRunProgramRequest", this.decToHex(programNr));
 	}
+	async retrieveSchedule(page = 0x00, index = 0x00) {
+		// this is not implemented as my ESP-ME3 does not support this command so I can't test it
+		return this._queue("RetrieveScheduleRequest", this.decToHex(page), this.decToHex(index));
+	}
+	async checkCommandSupport(command) {
+		const result = await this._queue("CommandSupportRequest", this.decToHex(command));
+		return result && parseInt(result.support, 16) !== 0;
+	}
+	async getCombinedControllerState() {
+		return this._queue("CombinedControllerStateRequest");
+	}
 
 	// --- queue ensures one request at a time ---
 	async _queue(command, ...params) {
@@ -121,32 +128,23 @@ class RainBirdClass {
 	// --- logger ---
 	log(msg, level = "debug") {
 		const message = typeof msg === "object" ? JSON.stringify(msg) : msg;
-
-		// Skip debug messages when debug mode is off
 		if (!this.debug && level === "debug") return;
-
-        //make debug = warn to work with node
-        if (level==="debug") level="log";
-
-		// Normalize level (only log, warn, error are allowed)
+		if (level === "debug") level = "log";
 		const validLevels = ["log", "warn", "error"];
 		const normalizedLevel = validLevels.includes(level) ? level : "log";
-
-		if (this.logger) {
-			this.logger[normalizedLevel](message);
-		} else {
-			console[normalizedLevel](message);
-		}
+		if (this.logger) this.logger[normalizedLevel](message);
+		else console[normalizedLevel](message);
 	}
 
 	// --- actual request execution ---
 	async _request(command, ...params) {
+		const commandData = sipCommands.ControllerCommands[command];
+		if (!commandData) throw new Error("Invalid command");
+
 		const maxAttempts = this.retryCount > 0 ? this.retryCount : 1;
 		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
 				this.log(`Requesting ${command} from ${this.ip} (attempt ${attempt})`);
-				const commandData = RainBirdClass.sipCommands.ControllerCommands[command];
-				if (!commandData) throw new Error("Invalid command");
 
 				const body = this.encrypt(this.makeBody(commandData, params));
 				const controller = new AbortController();
@@ -208,9 +206,16 @@ class RainBirdClass {
 		const resultLength = response.result.length;
 		const resultData = response.result.data;
 		const resultCode = resultData.substring(0, 2);
-		const resultObj = RainBirdClass.sipCommands.ControllerResponses[resultCode];
+		const resultObj = sipCommands.ControllerResponses[resultCode];
+
+		this.log(
+			`Response resultCode: ${resultCode}, resultObj: ${JSON.stringify(resultObj)}, resultData: ${JSON.stringify(resultData)}`,
+			"debug"
+		);
+
 		if (!resultObj) throw new Error("Response code not found");
-		if (resultLength !== resultObj.length) throw new Error("Invalid response length");
+		if (resultObj.length !== null && resultLength !== resultObj.length)
+			throw new Error("Invalid response length: " + resultLength);
 
 		const output = {};
 		Object.keys(resultObj).forEach((key) => {
@@ -290,169 +295,6 @@ class RainBirdClass {
 			}
 		});
 	}
-
-	// --- static SIP command definitions ---
-	static sipCommands = {
-		ControllerCommands: {
-			ModelAndVersionRequest: { command: "02", response: "82", length: 1 },
-			AvailableStationsRequest: { command: "03", parameter: 0, response: "83", length: 2 },
-			CommandSupportRequest: { command: "04", commandToTest: "02", response: "84", length: 2 },
-			SerialNumberRequest: { command: "05", response: "85", length: 1 },
-			CurrentTimeRequest: { command: "10", response: "90", length: 1 },
-			CurrentDateRequest: { command: "12", response: "92", length: 1 },
-			WaterBudgetRequest: { command: "30", parameter: 0, response: "B0", length: 2 },
-			ZonesSeasonalAdjustFactorRequest: { command: "32", parameter: 0, response: "B2", length: 2 },
-			CurrentRainSensorStateRequest: { command: "3E", response: "BE", length: 1 },
-			CurrentStationsActiveRequest: { command: "3F", parameter: 0, response: "BF", length: 2 },
-			ManuallyRunProgramRequest: { command: "38", parameter: 0, response: "01", length: 2 },
-			ManuallyRunStationRequest: { command: "39", parameterOne: 0, parameterTwo: 0, response: "01", length: 4 },
-			TestStationsRequest: { command: "3A", parameter: 0, response: "01", length: 2 },
-			StopIrrigationRequest: { command: "40", response: "01", length: 1 },
-			RainDelayGetRequest: { command: "36", response: "B6", length: 1 },
-			RainDelaySetRequest: { command: "37", parameter: 0, response: "01", length: 3 },
-			AdvanceStationRequest: { command: "42", parameter: 0, response: "01", length: 2 },
-			CurrentIrrigationStateRequest: { command: "48", response: "C8", length: 1 },
-			CurrentControllerStateSet: { command: "49", parameter: 0, response: "01", length: 2 },
-			ControllerEventTimestampRequest: { command: "4A", parameter: 0, response: "CA", length: 2 },
-			StackManuallyRunStationRequest: {
-				command: "4B",
-				parameter: 0,
-				parameterTwo: 0,
-				parameterThree: 0,
-				response: "01",
-				length: 4,
-			},
-			CombinedControllerStateRequest: { command: "4C", response: "CC", length: 1 },
-		},
-		ControllerResponses: {
-			"00": {
-				length: 3,
-				type: "NotAcknowledgeResponse",
-				commandEcho: { position: 2, length: 2 },
-				NAKCode: { position: 4, length: 2 },
-				f: (o) => (o.ack = false),
-			},
-			"01": {
-				length: 2,
-				type: "AcknowledgeResponse",
-				commandEcho: { position: 2, length: 2 },
-				f: (o) => (o.ack = true),
-			},
-			82: {
-				length: 5,
-				type: "ModelAndVersionResponse",
-				modelID: { position: 2, length: 4 },
-				protocolRevisionMajor: { position: 6, length: 2 },
-				protocolRevisionMinor: { position: 8, length: 2 },
-			},
-			83: {
-				length: 6,
-				type: "AvailableStationsResponse",
-				pageNumber: { position: 2, length: 2 },
-				setStations: { position: 4, length: 8 },
-			},
-			84: {
-				length: 3,
-				type: "CommandSupportResponse",
-				commandEcho: { position: 2, length: 2 },
-				support: { position: 4, length: 2 },
-			},
-			85: { length: 9, type: "SerialNumberResponse", serialNumber: { position: 2, length: 16 } },
-			90: {
-				length: 4,
-				type: "CurrentTimeResponse",
-				hour: { position: 2, length: 2 },
-				minute: { position: 4, length: 2 },
-				second: { position: 6, length: 2 },
-				f: (o) => {
-					o.hour = parseInt(o.hour, 16);
-					o.minute = parseInt(o.minute, 16);
-					o.second = parseInt(o.second, 16);
-				},
-			},
-			92: {
-				length: 4,
-				type: "CurrentDateResponse",
-				day: { position: 2, length: 2 },
-				month: { position: 4, length: 1 },
-				year: { position: 5, length: 3 },
-				f: (o) => {
-					o.day = parseInt(o.day, 16);
-					o.month = parseInt(o.month, 16);
-					o.year = parseInt(o.year, 16);
-				},
-			},
-			B0: {
-				length: 4,
-				type: "WaterBudgetResponse",
-				programCode: { position: 2, length: 2 },
-				seasonalAdjust: { position: 4, length: 4 },
-			},
-			B2: {
-				length: 18,
-				type: "ZonesSeasonalAdjustFactorResponse",
-				programCode: { position: 2, length: 2 },
-				stationsSA: { position: 4, length: 32 },
-			},
-			BE: {
-				length: 2,
-				type: "CurrentRainSensorStateResponse",
-				sensorState: { position: 2, length: 2 },
-				f: (o) => (o.sensorState = !!parseInt(o.sensorState, 16)),
-			},
-			BF: {
-				length: 6,
-				type: "CurrentStationsActiveResponse",
-				pageNumber: { position: 2, length: 2 },
-				activeStations: { position: 4, length: 8 },
-				f: (o) => {
-					o.activeZones = o.activeStations.match(/.{1,2}/g).map(
-						(x) =>
-							parseInt("0x" + x)
-								.toString(2)
-								.split("")
-								.reverse()
-								.join("")
-								.indexOf("1") + 1
-					);
-				},
-			},
-			B6: {
-				length: 3,
-				type: "RainDelaySettingResponse",
-				delaySetting: { position: 2, length: 4 },
-				f: (o) => (o.delaySetting = parseInt(o.delaySetting, 16)),
-			},
-			C8: {
-				length: 2,
-				type: "CurrentIrrigationStateResponse",
-				irrigationState: { position: 2, length: 2 },
-				f: (o) => (o.irrigationState = !!parseInt(o.irrigationState, 16)),
-			},
-			CA: {
-				length: 6,
-				type: "ControllerEventTimestampResponse",
-				eventId: { position: 2, length: 2 },
-				timestamp: { position: 4, length: 8 },
-			},
-			CC: {
-				length: 16,
-				type: "CombinedControllerStateResponse",
-				hour: { position: 2, length: 2 },
-				minute: { position: 4, length: 2 },
-				second: { position: 6, length: 2 },
-				day: { position: 8, length: 2 },
-				month: { position: 10, length: 1 },
-				year: { position: 11, length: 3 },
-				delaySetting: { position: 14, length: 4 },
-				sensorState: { position: 18, length: 2 },
-				irrigationState: { position: 20, length: 2 },
-				seasonalAdjust: { position: 22, length: 4 },
-				remainingRuntime: { position: 26, length: 4 },
-				activeStation: { position: 30, length: 2 },
-			},
-		},
-	};
 }
 
 module.exports = RainBirdClass;

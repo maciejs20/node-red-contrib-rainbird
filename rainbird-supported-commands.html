@@ -1,0 +1,31 @@
+<script type="text/javascript">
+    RED.nodes.registerType('rainbird-supported-commands',{
+        category: 'rainbird',
+        color: '#FDF0C2',
+        defaults: {
+            server: {value:"", type:"rainbird-server"}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "font-awesome/fa-check-square",
+        label: function() {
+            return this.name||"rainbird-supported-commands";
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="rainbird-supported-commands">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-tag"></i> Server</label>
+        <input type="text" id="node-input-server" placeholder="Server">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="rainbird-supported-commands">
+    <p>Checks support for all possible Rainbird SIP commands (0x00 to 0xFF).</p>
+    <p>Result example:</p>
+    <pre>[
+  { "commandHex": "0x4C", "supported": true, "name": "CombinedControllerStateRequest" },
+  { "commandHex": "0x20", "supported": false, "name": null }
+]</pre>
+</script>

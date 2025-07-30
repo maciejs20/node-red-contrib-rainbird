@@ -1,5 +1,11 @@
 This set of nodes enables communication with the Rainbird irrigation controller via a local LNK2 connection. To use these nodes, you need both the Rainbird controller and the LNK2 add-on properly plugged in and configured. It should work with most Rainbird devices using LNK2 wifi module but currently it is tested with ESP-me3. Original protocol implementation was also tested with ESP-RZXe. This module is exposing nodes that allows both to query state and start/stop irrigation proces. It is intended to be used with node-red NRCHKB homekit integration which allows to expose irrigation system in Apple Home app.
 
+
+This package uses modified protocol code of [node-rainbird](https://github.com/bbreukelen/node-rainbird) to communicate with Rainbird controllers.
+This project includes protocol data from [pyrainbird](https://github.com/allenporter/pyrainbird/blob/main/pyrainbird)
+
+Rainbird did not release API specification, some brave people discovered how those devices works. This project is re-using their excellent work. See the CREDITS file.
+
 ### Prerequisites
 
 To connect, you need the **LNK2 IP address** and **PIN**:
@@ -7,7 +13,7 @@ To connect, you need the **LNK2 IP address** and **PIN**:
 * **LNK2 PIN**: This is the code you set up in the Rainbird mobile app when configuring the LNK2.
 * **LNK2 IP**: This is the local IP address assigned by your router.
 
-This package uses modified protocol code of [node-rainbird](https://github.com/bbreukelen/node-rainbird) to communicate with Rainbird controllers.
+
 
 ### Available Nodes:
 
@@ -19,7 +25,7 @@ The payload contains following:
 ```json
 {
     "serialNumber": {
-        "serialNumber": "XXXXXXXXXXXXX"
+        "serialNumber": "XXXXXXXXXXXXXXX"
     },
     "modelAndVersion": {
         "modelID": "0009",
@@ -30,47 +36,43 @@ The payload contains following:
         "supportsWaterBudget": true,
         "maxPrograms": 4,
         "maxRunTimes": 6,
-        "retries": true
-    },
-    "time": {
-        "hour": 11,
-        "minute": 16,
-        "second": 9
-    },
-    "date": {
-        "day": 28,
-        "month": 7,
-        "year": 2025
+        "retries": false
     },
     "availableZones": {
         "pageNumber": "00",
         "stationsAvail": 10
     },
     "rainSensorState": {
-        "sensorState": false
+        "sensorState": "00"
     },
     "programsWaterBudget": [
         {
             "programCode": "00",
-            "seasonalAdjust": "006D",
-            "waterBudgetPercent": 109
+            "waterBudgetPercent": 97
         },
         {
             "programCode": "01",
-            "seasonalAdjust": "004C",
             "waterBudgetPercent": 76
         },
         {
             "programCode": "02",
-            "seasonalAdjust": "0064",
             "waterBudgetPercent": 100
         },
         {
             "programCode": "03",
-            "seasonalAdjust": "004C",
             "waterBudgetPercent": 76
         }
-    ]
+    ],
+    "timeDecoded": {
+        "hour": 18,
+        "minute": 58,
+        "second": 7
+    },
+    "dateDecoded": {
+        "day": 29,
+        "month": 7,
+        "year": 2025
+    }
 }
 ```
 
@@ -160,6 +162,10 @@ Retrieves information on whether a program's start has been delayed. The payload
   "delaySetting": number_of_days
 }
 ```
+#### **rainbird-supported-commands**
+Scans the entire command space (0x00–0xFF) to check which Rainbird SIP commands are supported by the connected controller.
+Command lists only supported ones, known commands from the internal database are also mapped to friendly names.
+We are listing also commands that are defined in our code, but the device does not support them.
 
 ### Example Flow
 
