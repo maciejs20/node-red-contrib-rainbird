@@ -18,11 +18,10 @@ module.exports = function (RED) {
 			return;
 		}
 
-		// auto-refresh when zone started/closed
+		// auto-refresh when zone started/stopped
 		this.server.registerOnZoneStart((zoneId, duration) => {
-			node.debug(`Zone ${zoneId} started. Forcing update.`);
-			setTimeout(() => node.emit("input", {}), 600);
-			setTimeout(() => node.emit("input", {}), 2000);
+			setTimeout(() => node.emit("input", {}), 500);
+			setTimeout(() => node.emit("input", {}), 3000);
 		});
 
 		const rainbird = this.server.getInstance();

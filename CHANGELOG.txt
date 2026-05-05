@@ -15,3 +15,14 @@
         Modified rainbird-state to show additional info about controller state and running program - not tested as my ESP-ME3 does not support that command
 1.0.42: Added node to check which command is supported by controller.
 1.0.43: Decoding time and date in info response.
+1.0.44: Fixed bug in CurrentStationsActiveResponse
+1.0.45: Maximum command queue length reduced to 10 in order to mitigate problem when rainbird is unavailable for longer period of time.
+1.0.46: Added HTTPS support for new RainBird firmware controllers (LNK WiFi module with HTTPS-only communication).
+        Protocol is auto-detected on first request: HTTP is tried first; on connection failure HTTPS is used and cached permanently.
+        Self-signed certificate accepted (rejectUnauthorized: false). Switch is logged to console.
+1.0.47: Performance improvements:
+        - HTTP/HTTPS keep-alive persistent connections (reuse TCP, one socket per controller).
+        - Inter-request queue delay reduced from 100ms to 50ms.
+        - checkCommandSupport() result cached for lifetime of instance (eliminates redundant probe on every rainbird-state call).
+        - Agents properly destroyed on Node-RED flow reload (config node close handler).
+        - rainbird-active queries controller state at 0.5s and 3s after start/stop zone command.

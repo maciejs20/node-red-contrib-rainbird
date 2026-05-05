@@ -151,11 +151,25 @@ const sipCommands = {
 			sensorState: { position: 2, length: 2 },
 		},
 		BF: {
-			// CurrentStationsActiveResponse
-			type: "CurrentStationsActiveResponse",
 			length: 6,
+			type: "CurrentStationsActiveResponse",
 			pageNumber: { position: 2, length: 2 },
 			activeStations: { position: 4, length: 8 },
+			f: (o) =>
+				(o.activeZones = o.activeStations.match(/.{1,2}/g).map(
+					(x) =>
+						parseInt("0x" + x)
+							.toString(2)
+							.split("")
+							.reverse()
+							.join("")
+							.indexOf("1") + 1
+				)),
+			/* activeStations looks like 20000000 allowing for 4 sets of stations.
+                match makes array of 2 characters, map loops over array, parseInt converts hex to decimal giving 32.
+                toString converts to binary string giving 100000, split,revers,join reverses and makes 000001.
+                indexOf gives position of the 1 or -1. +1 gives value 6. Possible values are 0 (no zone) to 6
+             */
 		},
 		C8: {
 			// CurrentIrrigationStateResponse

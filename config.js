@@ -60,6 +60,11 @@ module.exports = function (RED) {
 		};
 
 		node.log("Rainbird config: Init LNK2 ip=" + this.rainIp);
+
+		node.on("close", function (done) {
+			node.rainbirdInstance.destroy();
+			done();
+		});
 	}
 
 	RED.nodes.registerType("rainbird-server", RemoteServerNode);

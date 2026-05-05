@@ -8,6 +8,8 @@
 
 const fetch = require("node-fetch");
 const crypto = require("crypto");
+const http = require("http");
+const https = require("https");
 const { TextEncoder, TextDecoder } = require("util");
 const { AbortController } = require("abort-controller");
 const aesjs = require("aes-js");
@@ -24,6 +26,10 @@ class RainBirdClass {
 		this.retryDelay = 1000; // delay between retries
 		this.logger = null; // external logger object (Node-RED or similar)
 		this._mutex = Promise.resolve(); // ensures only one request at a time
+		this._protocol = null; // detected on first request: 'https' or 'http'
+		this._commandSupportCache = new Map();
+		this._httpAgent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+		this._httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: false, maxSockets: 1 });
 	}
 
 	// --- configuration ---
@@ -107,8 +113,11 @@ class RainBirdClass {
 		return this._queue("RetrieveScheduleRequest", this.decToHex(page), this.decToHex(index));
 	}
 	async checkCommandSupport(command) {
+		if (this._commandSupportCache.has(command)) return this._commandSupportCache.get(command);
 		const result = await this._queue("CommandSupportRequest", this.decToHex(command));
-		return result && parseInt(result.support, 16) !== 0;
+		const supported = result && parseInt(result.support, 16) !== 0;
+		this._commandSupportCache.set(command, supported);
+		return supported;
 	}
 	async getCombinedControllerState() {
 		return this._queue("CombinedControllerStateRequest");
@@ -116,13 +125,27 @@ class RainBirdClass {
 
 	// --- queue ensures one request at a time ---
 	async _queue(command, ...params) {
-		this._mutex = this._mutex
-			.then(() => this._request(command, ...params))
-			.catch((err) => {
-				this.log(`Queue error: ${err.message}`, "error");
-				throw err;
+		if (!this.queueLength) this.queueLength = 0;
+		this.queueLength++;
+
+		const MAX_QUEUE_DEPTH = 15;
+
+		if (this.queueLength > MAX_QUEUE_DEPTH) {
+			this.queueLength--;
+			throw new Error(`Queue depth exceeded maximum of ${MAX_QUEUE_DEPTH}`);
+		}
+
+		const result = this._mutex
+			.then(async () => {
+				await new Promise((res) => setTimeout(res, 50));
+				return this._request(command, ...params);
+			})
+			.finally(() => {
+				this.queueLength--;
 			});
-		return this._mutex;
+
+		this._mutex = result.catch(() => {}); // preserve chain
+		return result;
 	}
 
 	// --- logger ---
@@ -136,6 +159,35 @@ class RainBirdClass {
 		else console[normalizedLevel](message);
 	}
 
+	// --- protocol detection and fetch ---
+	async _fetch(body, signal) {
+		const opts = this.makeRequestOptions(body);
+
+		if (this._protocol === "https") return fetch(`https://${this.ip}/stick`, { ...opts, agent: this._httpsAgent, signal });
+		if (this._protocol === "http") return fetch(`http://${this.ip}/stick`, { ...opts, agent: this._httpAgent, signal });
+
+		// Protocol unknown — try HTTP first, fall back to HTTPS once on connection failure
+		try {
+			const res = await fetch(`http://${this.ip}/stick`, { ...opts, agent: this._httpAgent, signal });
+			this._protocol = "http";
+			return res;
+		} catch (err) {
+			if (err.name === "AbortError") throw err;
+			this.log(`HTTP failed (${err.message}), trying HTTPS`);
+			const res = await fetch(`https://${this.ip}/stick`, { ...opts, agent: this._httpsAgent, signal });
+			this._protocol = "https";
+			console.log(`RainBird [${this.ip}]: HTTP unavailable, switched to HTTPS permanently`);
+			return res;
+		}
+	}
+
+	destroy() {
+		this._httpAgent.destroy();
+		this._httpsAgent.destroy();
+		this._commandSupportCache.clear();
+		this._protocol = null;
+	}
+
 	// --- actual request execution ---
 	async _request(command, ...params) {
 		const commandData = sipCommands.ControllerCommands[command];
@@ -144,23 +196,20 @@ class RainBirdClass {
 		const maxAttempts = this.retryCount > 0 ? this.retryCount : 1;
 		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
-				this.log(`Requesting ${command} from ${this.ip} (attempt ${attempt})`);
+				this.log(`[D:${this.queueLength}] Requesting ${command} from ${this.ip} (attempt ${attempt})`);
 
 				const body = this.encrypt(this.makeBody(commandData, params));
 				const controller = new AbortController();
 				const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-				const res = await fetch(`http://${this.ip}/stick`, {
-					...this.makeRequestOptions(body),
-					signal: controller.signal,
-				});
+				const res = await this._fetch(body, controller.signal);
 				clearTimeout(timeoutId);
 				if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
 
 				const data = Buffer.from(await res.arrayBuffer());
 				const response = this.processResponse(data);
 
-				this.log(response);
+				this.log(`[D:${this.queueLength}] Response ${command}: ${JSON.stringify(response)}`);
 				return response;
 			} catch (err) {
 				const isTimeout = err.name === "AbortError";
@@ -209,7 +258,9 @@ class RainBirdClass {
 		const resultObj = sipCommands.ControllerResponses[resultCode];
 
 		this.log(
-			`Response resultCode: ${resultCode}, resultObj: ${JSON.stringify(resultObj)}, resultData: ${JSON.stringify(resultData)}`,
+			`Response resultCode: ${resultCode}, resultObj: ${JSON.stringify(resultObj)}, resultData: ${JSON.stringify(
+				resultData
+			)}`,
 			"debug"
 		);
 
