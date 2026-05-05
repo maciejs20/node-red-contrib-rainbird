@@ -13,6 +13,10 @@ To connect, you need the **LNK2 IP address** and **PIN**:
 * **LNK2 PIN**: This is the code you set up in the Rainbird mobile app when configuring the LNK2.
 * **LNK2 IP**: This is the local IP address assigned by your router.
 
+### New firmware / HTTPS support
+
+Newer RainBird LNK WiFi modules (updated firmware) enforce HTTPS-only communication and reject plain HTTP connections. This module handles that automatically: on the first request it tries HTTP, and if the connection is refused it switches to HTTPS and remembers that choice for the lifetime of the connection. No configuration is needed — the correct protocol is detected and used transparently. The controller's self-signed certificate is accepted.
+
 
 
 ### Available Nodes:

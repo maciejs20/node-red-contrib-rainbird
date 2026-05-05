@@ -26,3 +26,4 @@
         - checkCommandSupport() result cached for lifetime of instance (eliminates redundant probe on every rainbird-state call).
         - Agents properly destroyed on Node-RED flow reload (config node close handler).
         - rainbird-active queries controller state at 0.5s and 3s after start/stop zone command.
+1.0.48: README updated with HTTPS/new firmware documentation.
