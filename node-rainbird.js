@@ -16,6 +16,22 @@ const aesjs = require("aes-js");
 
 const sipCommands = require("./rainbird-sip-commands");
 
+const NAK_BITS = {
+	0x01: "Command Not Supported",
+	0x02: "Bad Length",
+	0x04: "Incompatible Data",
+	0x08: "Checksum Error",
+};
+
+function decodeNak(hex) {
+	const value = parseInt(hex, 16) || 0;
+	const reasons = Object.keys(NAK_BITS)
+		.map(Number)
+		.filter((bit) => value & bit)
+		.map((bit) => NAK_BITS[bit]);
+	return { value, reasons: reasons.length ? reasons : [`Unknown (0x${hex})`] };
+}
+
 class RainBirdClass {
 	constructor(ipAddress, password) {
 		this.ip = ipAddress;
@@ -30,6 +46,10 @@ class RainBirdClass {
 		this._commandSupportCache = new Map();
 		this._httpAgent = new http.Agent({ keepAlive: true, maxSockets: 1 });
 		this._httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: false, maxSockets: 1 });
+		this._cbFailures = 0;    // consecutive connection-level failures
+		this._cbOpenUntil = 0;   // epoch ms until circuit stays open
+		this._cbThreshold = 3;   // failures before tripping
+		this._cbCooldown = 90000; // 90s — manufacturer recommends >60s
 	}
 
 	// --- configuration ---
@@ -126,6 +146,12 @@ class RainBirdClass {
 	// --- queue ensures one request at a time ---
 	async _queue(command, ...params) {
 		if (!this.queueLength) this.queueLength = 0;
+
+		if (Date.now() < this._cbOpenUntil) {
+			const remaining = Math.ceil((this._cbOpenUntil - Date.now()) / 1000);
+			throw new Error(`Circuit breaker open — controller recovery in progress (${remaining}s remaining)`);
+		}
+
 		this.queueLength++;
 
 		const MAX_QUEUE_DEPTH = 15;
@@ -137,7 +163,12 @@ class RainBirdClass {
 
 		const result = this._mutex
 			.then(async () => {
-				await new Promise((res) => setTimeout(res, 50));
+				await new Promise((res) => setTimeout(res, 100));
+				// fast-fail requests that were queued before the circuit opened
+				if (Date.now() < this._cbOpenUntil) {
+					const remaining = Math.ceil((this._cbOpenUntil - Date.now()) / 1000);
+					throw new Error(`Circuit breaker open (${remaining}s remaining)`);
+				}
 				return this._request(command, ...params);
 			})
 			.finally(() => {
@@ -150,7 +181,8 @@ class RainBirdClass {
 
 	// --- logger ---
 	log(msg, level = "debug") {
-		const message = typeof msg === "object" ? JSON.stringify(msg) : msg;
+		const proto = this._protocol ? `[${this._protocol.toUpperCase()}] ` : "";
+		const message = proto + (typeof msg === "object" ? JSON.stringify(msg) : msg);
 		if (!this.debug && level === "debug") return;
 		if (level === "debug") level = "log";
 		const validLevels = ["log", "warn", "error"];
@@ -176,8 +208,25 @@ class RainBirdClass {
 			this.log(`HTTP failed (${err.message}), trying HTTPS`);
 			const res = await fetch(`https://${this.ip}/stick`, { ...opts, agent: this._httpsAgent, signal });
 			this._protocol = "https";
-			console.log(`RainBird [${this.ip}]: HTTP unavailable, switched to HTTPS permanently`);
+			this.log("HTTP unavailable, switched to HTTPS permanently");
 			return res;
+		}
+	}
+
+	_resetAgents() {
+		this._httpAgent.destroy();
+		this._httpsAgent.destroy();
+		this._httpAgent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+		this._httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: false, maxSockets: 1 });
+		this.log("HTTP agents reset after timeout", "warn");
+	}
+
+	_recordFailure() {
+		this._cbFailures++;
+		if (this._cbFailures >= this._cbThreshold) {
+			this._cbOpenUntil = Date.now() + this._cbCooldown;
+			this._cbFailures = 0;
+			this.log(`Circuit breaker opened — controller unresponsive, cooldown ${this._cbCooldown / 1000}s`, "warn");
 		}
 	}
 
@@ -186,6 +235,8 @@ class RainBirdClass {
 		this._httpsAgent.destroy();
 		this._commandSupportCache.clear();
 		this._protocol = null;
+		this._cbFailures = 0;
+		this._cbOpenUntil = 0;
 	}
 
 	// --- actual request execution ---
@@ -204,21 +255,33 @@ class RainBirdClass {
 
 				const res = await this._fetch(body, controller.signal);
 				clearTimeout(timeoutId);
-				if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+				if (!res.ok) {
+					const httpErr = new Error(`${res.status}: ${res.statusText}`);
+					httpErr.httpStatus = res.status;
+					throw httpErr;
+				}
 
 				const data = Buffer.from(await res.arrayBuffer());
 				const response = this.processResponse(data);
 
 				this.log(`[D:${this.queueLength}] Response ${command}: ${JSON.stringify(response)}`);
+				this._cbFailures = 0;
 				return response;
 			} catch (err) {
 				const isTimeout = err.name === "AbortError";
-				const isRetryable = isTimeout || ["ECONNRESET", "ECONNREFUSED"].includes(err.code);
-				this.log(`Error: ${err.message}`, "error");
+				const isConnFailure = isTimeout || ["ECONNRESET", "ECONNREFUSED"].includes(err.code);
+				const isBusy = err.httpStatus === 503 || err.rpcCode === -32002 || err.isChecksumError;
+				const isRetryable = isConnFailure || isBusy;
+				const rethrow = isTimeout ? new Error(`Timeout after ${this.timeout}ms — no response from controller (${command})`) : err;
+				this.log(`Error: ${rethrow.message}`, "error");
+				if (isTimeout) this._resetAgents();
 				if (isRetryable && attempt < maxAttempts) {
 					this.log(`Retrying in ${this.retryDelay}ms`);
 					await new Promise((r) => setTimeout(r, this.retryDelay));
-				} else throw err;
+				} else {
+					if (isConnFailure) this._recordFailure();
+					throw rethrow;
+				}
 			}
 		}
 	}
@@ -249,7 +312,11 @@ class RainBirdClass {
 	processResponse(data) {
 		const response = this.unpackResponse(data);
 		if (!response) throw new Error("No response received");
-		if (response.error) throw new Error(`Controller error ${response.error.code}: ${response.error.message}`);
+		if (response.error) {
+			const rpcErr = new Error(`Controller error ${response.error.code}: ${response.error.message}`);
+			rpcErr.rpcCode = response.error.code;
+			throw rpcErr;
+		}
 		if (!response.result) throw new Error("Invalid response");
 
 		const resultLength = response.result.length;
@@ -276,6 +343,16 @@ class RainBirdClass {
 		});
 		if (typeof resultObj.f === "function") resultObj.f(output);
 		output._type = resultObj.type;
+
+		if (resultCode === "00") {
+			const { value: nakCode, reasons } = decodeNak(output.NAKCode);
+			const nakErr = new Error(`Controller rejected command (NAK): ${reasons.join(", ")}`);
+			nakErr.nakCode = nakCode;
+			nakErr.nakReasons = reasons;
+			nakErr.isChecksumError = !!(nakCode & 0x08);
+			throw nakErr;
+		}
+
 		return output;
 	}
 

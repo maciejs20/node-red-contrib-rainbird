@@ -122,8 +122,9 @@ module.exports = function (RED) {
 				if (this._statusTimer) clearTimeout(this._statusTimer);
 				this._statusTimer = setTimeout(() => node.status({}), 5000);
 			} catch (err) {
-				node.error(`LNK2 Rainbird call error: ${err.message}`, msg);
-				node.status({ fill: "red", shape: "ring", text: err.message });
+				const errMsg = err?.message || String(err);
+				node.error(`LNK2 Rainbird call error: ${errMsg}`, msg);
+				node.status({ fill: "red", shape: "ring", text: errMsg });
 			}
 		});
 	}

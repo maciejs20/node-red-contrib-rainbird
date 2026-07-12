@@ -41,7 +41,7 @@ module.exports = function (RED) {
                     try {
                         supportedCmd = await rainbird.checkCommandSupport(command);
                     } catch (err) {
-                        node.warn(`Error checking command 0x${command.toString(16).padStart(2, "0")}: ${err.message}`);
+                        node.warn(`Error checking command 0x${command.toString(16).padStart(2, "0")}: ${err?.message || String(err)}`);
                     }
 
                     const known = Object.keys(knownCommands).find(
@@ -67,8 +67,9 @@ module.exports = function (RED) {
                 node.status({ fill: "green", shape: "dot", text: "Done" });
                 setTimeout(() => node.status({}), 5000);
             } catch (err) {
-                node.error(`Error checking supported commands: ${err.message}`, msg);
-                node.status({ fill: "red", shape: "ring", text: err.message });
+                const errMsg = err?.message || String(err);
+                node.error(`Error checking supported commands: ${errMsg}`, msg);
+                node.status({ fill: "red", shape: "ring", text: errMsg });
             } finally {
                 clearInterval(statusTimer);
                 currentCommand = null;

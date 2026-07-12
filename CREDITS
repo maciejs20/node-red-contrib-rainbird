@@ -10,4 +10,11 @@ This project includes data from:
 - URL: https://github.com/allenporter/pyrainbird/blob/main/pyrainbird
 - License: MIT
 
+This project includes documentation from:
+- Project: pyrainbird
+- File: docs/SIP_POROTOCL_COMMON.md (see docs/SIP_PROTOCOL.md)
+- Author: allenporter
+- URL: https://github.com/allenporter/pyrainbird/blob/main/docs/SIP_POROTOCL_COMMON.md
+- License: MIT
+
 Modifications made by Maciej Szulc, 2025.

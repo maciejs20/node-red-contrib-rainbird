@@ -27,3 +27,32 @@
         - Agents properly destroyed on Node-RED flow reload (config node close handler).
         - rainbird-active queries controller state at 0.5s and 3s after start/stop zone command.
 1.0.48: README updated with HTTPS/new firmware documentation.
+1.0.49: Fixed error reporting when Rainbird library throws non-Error values (e.g. plain strings).
+        Affected nodes: rainbird-info, rainbird-state, rainbird-active, rainbird-startZone, rainbird-supported-commands.
+        Previously err.message was undefined in those cases, making error logs unreadable ("Rainbird call error: undefined").
+1.0.50: Fixed connection stability when controller becomes temporarily unresponsive.
+        - Agent reset on timeout: keepAlive TCP socket is destroyed and recreated after each AbortError, forcing a fresh
+          connection on the next request (same approach as the manufacturer app).
+        - Circuit breaker: after 3 consecutive connection-level failures (timeout/ECONNRESET/ECONNREFUSED) all requests
+          are rejected immediately for a 90s cooldown (manufacturer recommends >60s recovery time). Already-queued
+          requests also fast-fail instead of waiting for their individual timeouts, preventing multi-minute blockades.
+1.0.51: Replaced misleading "The user aborted a request." with descriptive timeout message including
+        command name and configured timeout value, e.g. "Timeout after 3000ms — no response from
+        controller (CurrentStationsActiveRequest)".
+1.0.52: Improved resilience during LNK2 cloud shadow sync windows (controller can become briefly
+        unresponsive to local requests while syncing state to the Rain Bird cloud, roughly every
+        5 minutes on firmware v4.x+):
+        - Inter-request queue delay restored from 50ms back to 100ms to reduce the chance of hitting
+          the controller mid-sync.
+        - HTTP 503 and JSON-RPC error -32002 ("Controller Busy") are now retried using the existing
+          retry/backoff mechanism instead of failing immediately. These do not count toward the
+          connection-failure circuit breaker, since a busy response is not a connection fault.
+1.0.53: Fixed silent handling of controller NAK (Not-Acknowledge) responses. Previously a NAK (e.g.
+        Command Not Supported, Bad Length, Incompatible Data, Checksum Error) was returned to the
+        caller as if it were a normal successful result, since only the raw commandEcho/NAKCode
+        fields were extracted without checking for the NAK response code. Now processResponse()
+        decodes the NAKCode bitmask and throws a descriptive error (e.g. "Controller rejected
+        command (NAK): Checksum Error"). Checksum Error is treated as retryable/busy, matching the
+        other transient-busy handling from 1.0.52, since it is the most likely NAK to result from
+        Manchester-line contention during concurrent local access. Command Not Supported, Bad Length,
+        and Incompatible Data are logic errors and are not retried.

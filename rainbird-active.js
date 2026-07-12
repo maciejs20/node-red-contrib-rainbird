@@ -51,8 +51,9 @@ module.exports = function (RED) {
 					setTimeout(() => node.status({}), 5000);
 				})
 				.catch((err) => {
-					node.error("LNK2 Rainbird call error: " + err.message);
-					node.status({ fill: "red", shape: "ring", text: "Error" });
+					const errMsg = err?.message || String(err);
+					node.error("LNK2 Rainbird call error: " + errMsg);
+					node.status({ fill: "red", shape: "ring", text: errMsg });
 				});
 		});
 	}

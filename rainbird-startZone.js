@@ -47,8 +47,9 @@ module.exports = function (RED) {
 
 			next()
 				.catch((err) => {
-					node.error(`Command execution error: ${err.message}`);
-					node.status({ fill: "red", shape: "ring", text: `Error: ${err.message}` });
+					const errMsg = err?.message || String(err);
+					node.error(`Command execution error: ${errMsg}`);
+					node.status({ fill: "red", shape: "ring", text: `Error: ${errMsg}` });
 					setTimeout(() => node.status({}), 5000);
 				})
 				.finally(() => {
