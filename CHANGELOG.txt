@@ -56,3 +56,15 @@
         other transient-busy handling from 1.0.52, since it is the most likely NAK to result from
         Manchester-line contention during concurrent local access. Command Not Supported, Bad Length,
         and Incompatible Data are logic errors and are not retried.
+1.1.0:  Mitigation for LNK2 module resets observed when starting a zone (module briefly shows an
+        undocumented purple LED, then boots and falls back to its own AP hotspot — alternating
+        green/red — until the button is pressed).
+        - rainbird-active: post-zone-start refresh reduced from two queries (500ms and 3000ms) to a
+          single query after 10s. ManuallyRunStationRequest can take 15-20s to acknowledge on LNK2,
+          so the old 500ms query was serialised by the request queue and ended up firing ~100ms after
+          the start command returned — exactly while the valve solenoid was drawing inrush current.
+        - rainbird-startZone: GLOBAL_COMMAND_DELAY_MS raised from 300ms to 1000ms so consecutive zone
+          starts no longer overlap valve switching, which matters most with a master valve or pump.
+        Note: if the module also resets when a zone is started manually from the controller keypad
+        with the network idle, the cause is electrical (brownout on the shared 24VAC supply) rather
+        than protocol-related, and these changes will not fix it.

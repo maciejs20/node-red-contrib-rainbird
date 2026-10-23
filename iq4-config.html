@@ -1,0 +1,95 @@
+<script type="text/javascript">
+	RED.nodes.registerType("rainbird-iq4-server", {
+		category: "config",
+		color: "#a6bbcf",
+		defaults: {
+			sname: { value: "iq4" },
+			email: { value: "" },
+			satelliteId: { value: "", validate: RED.validators.number() },
+			clientId: { value: "" },
+			debug: { value: false },
+		},
+		credentials: {
+			password: { type: "password" },
+			accessToken: { type: "password" },
+			wafToken: { type: "password" },
+		},
+		label: function () {
+			return this.sname || "rainbird-iq4-server";
+		},
+		oneditprepare: function () {
+			// Generate a stable APP_CLIENT_ID (UUID) once, on first setup.
+			var $id = $("#node-config-input-clientId");
+			if (!$id.val()) {
+				var uuid =
+					typeof crypto !== "undefined" && crypto.randomUUID
+						? crypto.randomUUID()
+						: "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+								var r = (Math.random() * 16) | 0;
+								var v = c === "x" ? r : (r & 0x3) | 0x8;
+								return v.toString(16);
+						  });
+				$id.val(uuid.toUpperCase());
+			}
+		},
+	});
+</script>
+
+<script type="text/html" data-template-name="rainbird-iq4-server">
+	<div class="form-row">
+		<label for="node-config-input-sname"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-config-input-sname" placeholder="IQ4 cloud name" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-email"><i class="fa fa-user"></i> Email</label>
+		<input type="text" id="node-config-input-email" placeholder="Rain Bird account email" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-password"><i class="fa fa-key"></i> Password</label>
+		<input type="password" id="node-config-input-password" placeholder="Rain Bird account password" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-satelliteId"><i class="fa fa-sitemap"></i> Satellite ID</label>
+		<input type="number" id="node-config-input-satelliteId" placeholder="Controller (satellite) ID" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-clientId"><i class="fa fa-id-card-o"></i> Client ID</label>
+		<input type="text" id="node-config-input-clientId" placeholder="Auto-generated UUID" readonly />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-accessToken"><i class="fa fa-ticket"></i> Access token</label>
+		<input type="password" id="node-config-input-accessToken" placeholder="(optional) paste Bearer token to bypass WAF login" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-wafToken"><i class="fa fa-shield"></i> AWS WAF token</label>
+		<input type="password" id="node-config-input-wafToken" placeholder="(optional) aws-waf-token cookie from browser" />
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-debug"><i class="fa fa-bug"></i> Debug</label>
+		<input type="checkbox" id="node-config-input-debug" />
+	</div>
+</script>
+
+<script type="text/html" data-help-name="rainbird-iq4-server">
+	<p>Stores credentials for the <b>Rain Bird IQ4 cloud</b> (Rain Bird 2.0 app REST API),
+	an alternative transport to the local LNK2/SIP connection.</p>
+	<ul>
+		<li><b>Email / Password</b> – your Rain Bird account credentials</li>
+		<li><b>Satellite ID</b> – numeric ID of the controller in the cloud account</li>
+		<li><b>Client ID</b> – a UUID generated once and kept stable (APP_CLIENT_ID)</li>
+	</ul>
+	<p>Authorization uses OIDC implicit flow (no refresh token); the token is cached
+	and refreshed automatically on expiry or a 401 response.</p>
+	<p><b>Access token (optional):</b> the headless login is protected by an AWS WAF
+	JavaScript challenge that a plain HTTP client cannot solve. If login fails with
+	<i>"blocked by AWS WAF (HTTP 202)"</i>, log in at
+	<code>https://iq4.rainbird.com</code> in a browser, open DevTools &rarr; Network,
+	pick any <code>coreapi</code> request and copy the value after
+	<code>Authorization: Bearer</code>. Paste it here. When set, login is skipped and
+	this token is used directly. It expires after ~1 hour and must be refreshed manually.</p>
+	<p><b>AWS WAF token (optional):</b> alternatively, copy the <code>aws-waf-token</code>
+	cookie from the same browser session (DevTools &rarr; Application &rarr; Cookies &rarr;
+	<code>iq4server.rainbird.com</code>). When set, it is sent with every request so the
+	<b>automated</b> login can pass the WAF challenge and refresh the JWT itself. Its
+	validity ("immunity time") is set by Rain Bird and may be short.</p>
+</script>

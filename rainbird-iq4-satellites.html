@@ -1,0 +1,34 @@
+<script type="text/javascript">
+	RED.nodes.registerType("rainbird-iq4-satellites", {
+		category: "rainbird",
+		color: "#FDF0C2",
+		defaults: {
+			name: { value: "" },
+			server: { value: "", type: "rainbird-iq4-server" },
+		},
+		inputs: 1,
+		outputs: 1,
+		icon: "font-awesome/fa-sitemap",
+		label: function () {
+			return this.name || "rainbird-iq4-satellites";
+		},
+	});
+</script>
+
+<script type="text/html" data-template-name="rainbird-iq4-satellites">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name" />
+	</div>
+	<div class="form-row">
+		<label for="node-input-server"><i class="fa fa-cloud"></i> Server</label>
+		<input type="text" id="node-input-server" placeholder="IQ4 server" />
+	</div>
+</script>
+
+<script type="text/html" data-help-name="rainbird-iq4-satellites">
+	<p>Lists all controllers (satellites) on your <b>Rain Bird IQ4 cloud</b> account.
+	Use it to discover the numeric <b>Satellite ID</b> to enter in the config node.</p>
+	<p>Send any message to trigger it. Output <code>msg.payload</code> is an array of
+	satellites; the <code>id</code> field of your controller is the Satellite ID.</p>
+</script>

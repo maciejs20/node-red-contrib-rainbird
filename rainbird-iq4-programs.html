@@ -1,0 +1,38 @@
+<script type="text/javascript">
+	RED.nodes.registerType("rainbird-iq4-programs", {
+		category: "rainbird",
+		color: "#FDF0C2",
+		defaults: {
+			name: { value: "" },
+			server: { value: "", type: "rainbird-iq4-server" },
+		},
+		inputs: 1,
+		outputs: 1,
+		icon: "font-awesome/fa-calendar",
+		label: function () {
+			return this.name || "rainbird-iq4-programs";
+		},
+	});
+</script>
+
+<script type="text/html" data-template-name="rainbird-iq4-programs">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name" />
+	</div>
+	<div class="form-row">
+		<label for="node-input-server"><i class="fa fa-cloud"></i> Server</label>
+		<input type="text" id="node-input-server" placeholder="IQ4 server" />
+	</div>
+</script>
+
+<script type="text/html" data-help-name="rainbird-iq4-programs">
+	<p>Reads program configuration from the <b>Rain Bird IQ4 cloud</b>.</p>
+	<p>Optionally override the controller with <code>msg.satelliteId</code>;
+	otherwise the config node's Satellite ID is used.</p>
+	<p>Output <code>msg.payload</code>:</p>
+	<ul>
+		<li><code>programs</code> – program list (A, B, C, D...) with seasonal adjust</li>
+		<li><code>assignedRuntime</code> – per-station runtimes mapped to programs</li>
+	</ul>
+</script>

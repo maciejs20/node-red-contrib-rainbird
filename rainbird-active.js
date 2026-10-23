@@ -2,6 +2,7 @@
 
 module.exports = function (RED) {
 	const MAX_SPRINKLERS = 6; // max number of zones in homekit mode. tested up to 8
+	const ZONE_REFRESH_DELAY_MS = 10000; // delay before querying state after a zone start/stop
 
 	function RainbirdNode(config) {
 		RED.nodes.createNode(this, config);
@@ -18,10 +19,11 @@ module.exports = function (RED) {
 			return;
 		}
 
-		// auto-refresh when zone started/stopped
+		// auto-refresh when zone started/stopped.
+		// Single delayed query only: ManuallyRunStationRequest can take 15-20s to acknowledge on LNK2,
+		// and querying while the valve is switching risks a brownout reset of the module.
 		this.server.registerOnZoneStart((zoneId, duration) => {
-			setTimeout(() => node.emit("input", {}), 500);
-			setTimeout(() => node.emit("input", {}), 3000);
+			setTimeout(() => node.emit("input", {}), ZONE_REFRESH_DELAY_MS);
 		});
 
 		const rainbird = this.server.getInstance();
