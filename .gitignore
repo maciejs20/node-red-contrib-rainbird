@@ -1,2 +1,13 @@
+# Secrets, local config and runtime data — never commit
+node_modules/
+*.log
+.env
+# Node-RED flow export holds the controller IP and key (rainKey)
+nodered/flow.flow
+
+# NAS metadata and OS files
+@eaDir/
+*@SynoEAStream
+*@SynoResource
 .DS_Store
 .vscode/
