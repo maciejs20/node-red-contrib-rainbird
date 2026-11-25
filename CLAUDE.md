@@ -2,6 +2,7 @@
 
 @/mnt/devel/homeProjects/codingRules/CLAUDE.md
 @/mnt/devel/homeProjects/codingRules/rules/workflow-git.md
+@/mnt/devel/homeProjects/codingRules/rules/writing.md
 @/mnt/devel/homeProjects/codingRules/rules/testing.md
 @/mnt/devel/homeProjects/codingRules/rules/scripts.md
 @/mnt/devel/homeProjects/codingRules/rules/node.md
@@ -24,3 +25,6 @@
 
 - Override of the node-docker template: Node-RED node library, not a container service; `docker-startup.md`,
   `startup-portal.md`, `web-gui.md` not imported.
+- `sms-alerts.md` not imported: a node library has no process or notification channel of its own; it reports
+  faults as node status and error messages, and the Node-RED flow that uses the nodes holds the notification path
+  (hand-over, core §10).
