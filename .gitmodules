@@ -1,0 +1,3 @@
+[submodule "docs/coding-rules"]
+	path = docs/coding-rules
+	url = https://github.com/maciejs20/coding-rules

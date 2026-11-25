@@ -1,11 +1,14 @@
 # rainbird – project rules
 
-@/mnt/devel/homeProjects/codingRules/CLAUDE.md
-@/mnt/devel/homeProjects/codingRules/rules/workflow-git.md
-@/mnt/devel/homeProjects/codingRules/rules/writing.md
-@/mnt/devel/homeProjects/codingRules/rules/testing.md
-@/mnt/devel/homeProjects/codingRules/rules/scripts.md
-@/mnt/devel/homeProjects/codingRules/rules/node.md
+@docs/coding-rules/CLAUDE.md
+@docs/coding-rules/rules/workflow-git.md
+@docs/coding-rules/rules/writing.md
+@docs/coding-rules/rules/testing.md
+@docs/coding-rules/rules/scripts.md
+@docs/coding-rules/rules/node.md
+
+Imports: the shared rule set is the git submodule `docs/coding-rules` (op. 2026-11-25); update it with
+`git submodule update --remote docs/coding-rules` and commit the new pointer; never edit it here.
 
 ## Project facts
 
