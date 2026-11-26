@@ -28,6 +28,9 @@ Imports: the shared rule set is the git submodule `docs/coding-rules` (op. 2026-
 
 - Override of the node-docker template: Node-RED node library, not a container service; `docker-startup.md`,
   `startup-portal.md`, `web-gui.md` not imported.
+- On-demand modules (core §10): none listed and no pointer files; the library has no `startup/`, Docker files,
+  portal agent or own web GUI.
+- `web-auth.md` not imported: no own web interface or HTTP API; the Node-RED editor and runtime hold access.
 - `sms-alerts.md` not imported: a node library has no process or notification channel of its own; it reports
   faults as node status and error messages, and the Node-RED flow that uses the nodes holds the notification path
   (hand-over, core §10).
