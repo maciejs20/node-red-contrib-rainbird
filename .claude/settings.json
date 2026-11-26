@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 200,
+            "command": "f=\"$CLAUDE_PROJECT_DIR/docs/coding-rules/scripts/rules-sync/rules-sync.sh\"; if [ -f \"$f\" ]; then exec bash \"$f\" session-start; else echo 'Coding rules submodule missing: run git submodule update --init docs/coding-rules'; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 200,
+            "command": "f=\"$CLAUDE_PROJECT_DIR/docs/coding-rules/scripts/rules-sync/rules-sync.sh\"; [ -f \"$f\" ] && exec bash \"$f\" gate; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
